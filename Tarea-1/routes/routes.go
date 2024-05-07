@@ -130,3 +130,61 @@ func UpdateUserByID(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, updatedUser)
 }
+
+func Login(c *gin.Context) {
+	var loginUser models.User
+	if err := c.BindJSON(&loginUser); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Datos de usuario inválidos"})
+		return
+	}
+
+	var existingUser models.User
+	err := userCollection.FindOne(context.Background(), bson.M{"email": loginUser.Email}).Decode(&existingUser)
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Credenciales inválidas"})
+		return
+	}
+
+	if existingUser.Password != loginUser.Password {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Credenciales inválidas"})
+		return
+	}
+
+	// Aquí generarías un token JWT
+	// Por simplicidad, omitiré la generación del token en este ejemplo
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Inicio de sesión exitoso"})
+}
+
+// Ruta para el registro de usuario
+func Register(c *gin.Context) {
+	var newUser models.User
+	if err := c.BindJSON(&newUser); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Datos de usuario inválidos"})
+		return
+	}
+
+	// Verificar si el correo electrónico ya está en uso
+	var existingUser models.User
+	err := userCollection.FindOne(context.Background(), bson.M{"email": newUser.Email}).Decode(&existingUser)
+	if err == nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "El correo electrónico ya está en uso"})
+		return
+	}
+
+	// Insertar el nuevo usuario en la base de datos
+	_, err = userCollection.InsertOne(context.Background(), newUser)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar nuevo usuario"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "Usuario registrado exitosamente"})
+}
+
+func Logout(c *gin.Context) {
+	// Aquí podrías invalidar el token del usuario si es necesario
+	// Por simplicidad, omitiré esta parte en este ejemplo
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Sesión cerrada exitosamente"})
+}

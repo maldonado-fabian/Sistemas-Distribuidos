@@ -44,6 +44,9 @@ func main() {
 	router.GET("/users/:id", routes.GetUserByID)
 	router.DELETE("/users/:id", routes.DeleteUserByID)
 	router.PUT("/users/:id", routes.UpdateUserByID)
+	router.POST("/login", routes.Login)
+	router.POST("/register", routes.Register)
+	router.POST("/logout", routes.Logout)
 
 	// Iniciar el servidor HTTP
 	if err := http.ListenAndServe(":8080", router); err != nil {
