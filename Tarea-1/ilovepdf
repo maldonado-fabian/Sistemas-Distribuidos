@@ -1,0 +1,304 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+)
+
+const public_key string = "project_public_c14b91af1ac4799b1f229e682d664154_x5xfs2fff307d4bde7d8b8b6bef3a0f2a9391"
+
+// API REST s/BD ============================================================================
+type user struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Last_name string `json:"last_name"`
+	Rut       string `json:"rut"`
+	Email     string `json:"email"`
+}
+
+var users = []user{
+	{ID: "1", Name: "Jon", Last_name: "Doe", Rut: "12345678-9", Email: "jon.doe@mail.com"},
+	{ID: "2", Name: "Jane", Last_name: "Smith", Rut: "98765432-1", Email: "jane.smith@mail.com"},
+}
+
+func getUsers(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, users)
+}
+
+func postUsers(c *gin.Context) {
+	var newUser user
+	c.BindJSON(&newUser)
+	users = append(users, newUser)
+	c.IndentedJSON(http.StatusCreated, users)
+}
+
+func getUserById(c *gin.Context) {
+	id := c.Param("id")
+	for _, u := range users {
+		if u.ID == id {
+			c.IndentedJSON(http.StatusOK, u)
+			return
+		}
+	}
+	c.IndentedJSON(http.StatusNotFound, " ")
+}
+
+// iLovePDF =================================================================================
+// Estructuras de las respuestas
+type authResponse struct {
+	Token string `json:"token"`
+}
+
+type startResponse struct {
+	Server string `json:"server"`
+	Task   string `json:"task"`
+}
+
+type uploadResponse struct {
+	Server_filename string `json:"server_filename"`
+}
+
+type processResponse struct {
+	Download_filename string `json:"download_filename"`
+	Filesize          string `json:"filesize"`
+	Output_filesize   string `json:"output_filesize"`
+	Output_filenumber string `json:"output_filenumber"`
+	Output_extensions string `json:"output_extensions"`
+	Timer             string `json:"timer"`
+	Status            string `json:"status"`
+}
+
+// Peticiones REST
+// Auth  ------------------------------------------------------------------------------------
+func postAuth() string {
+	body, _ := json.Marshal(map[string]string{
+		"public_key": public_key,
+	})
+
+	req, _ := http.NewRequest("POST", "https://api.ilovepdf.com/v1/auth", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Error al obtener token: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var res authResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		log.Fatalf("Error al decodificar respuesta: %v", err)
+	}
+
+	return res.Token
+}
+
+// Auth  ------------------------------------------------------------------------------------
+
+// Start ------------------------------------------------------------------------------------
+func getStartProtect(c *gin.Context) {
+	token := postAuth()
+
+	req, _ := http.NewRequest("GET", "https://api.ilovepdf.com/v1/start/protect", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to process PDF"})
+		return
+	}
+	defer resp.Body.Close()
+
+	var response startResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode JSON"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+}
+
+// Start ------------------------------------------------------------------------------------
+
+// Upload -----------------------------------------------------------------------------------
+func uploadFile(c *gin.Context, server string, taskID string, filePath string, token string) {
+	// Abrir el archivo que se desea subir
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("Error opening file: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+		return
+	}
+	defer file.Close()
+
+	// Crear un body de tipo multipart para incluir el archivo y taskID
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filepath.Base(file.Name()))
+	if err != nil {
+		log.Printf("Error creating form file: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create form file"})
+		return
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		log.Printf("Error copying file: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to copy file"})
+		return
+	}
+	// Añadir taskID al cuerpo de la solicitud
+	_ = writer.WriteField("task", taskID)
+	writer.Close()
+
+	// Enviar la solicitud POST para subir el archivo
+	req, err := http.NewRequest("POST", "https://"+server+"/v1/upload", body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error uploading file: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Leer la respuesta
+	respBody, _ := ioutil.ReadAll(resp.Body)
+
+	// Deserializar el cuerpo de la respuesta a la estructura UploadResponse
+	var uploadResp uploadResponse
+	if err := json.Unmarshal(respBody, &uploadResp); err != nil {
+		log.Printf("Error parsing upload response: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse upload response"})
+		return
+	}
+
+	// Ahora enviamos la respuesta deserializada
+	c.IndentedJSON(http.StatusOK, uploadResp)
+
+}
+
+// Upload -----------------------------------------------------------------------------------
+
+// Process ----------------------------------------------------------------------------------
+func processFile(c *gin.Context, server string, taskID string, serverFilename string, filename string, password string, token string) {
+	// Crear el cuerpo de la solicitud
+	reqBodyData := map[string]interface{}{
+		"task": taskID,
+		"tool": "protect",
+		"files": []map[string]string{
+			{
+				"server_filename": serverFilename,
+				"filename":        filename,
+			},
+		},
+		"password": password,
+	}
+	reqBody, err := json.Marshal(reqBodyData)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal JSON"})
+		return
+	}
+
+	// Construir la solicitud
+	req, err := http.NewRequest("POST", "https://"+server+"/v1/process", bytes.NewBuffer(reqBody))
+	if err != nil {
+		log.Printf("Error creating request: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Enviar la solicitud
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error sending request: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to send request"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Leer la respuesta
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
+		return
+	}
+
+	var responseJSON map[string]interface{}
+	err = json.Unmarshal(respBody, &responseJSON)
+	if err != nil {
+		log.Printf("Error parsing response JSON: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse response JSON"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, responseJSON)
+}
+
+// Process ----------------------------------------------------------------------------------
+
+// MAIN =====================================================================================
+
+func main() {
+	// Simulación conexión con BD
+	router := gin.Default()
+	router.GET("/users", getUsers)
+	router.POST("/users", postUsers)
+	router.GET("/users/:id", getUserById)
+	router.GET("/start", getStartProtect)
+
+	router.POST("/upload", func(c *gin.Context) {
+		server := c.PostForm("server")
+		taskID := c.PostForm("taskID")
+		token := postAuth()
+
+		// Recuperar el archivo del formulario
+		file, err := c.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No file is received"})
+			return
+		}
+
+		// Guardar el archivo temporalmente en el disco
+		tempFileName := "./tmp/" + file.Filename
+		if err := c.SaveUploadedFile(file, tempFileName); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save the file"})
+			return
+		}
+		defer os.Remove(tempFileName) // Eliminar el archivo después de la operación
+
+		// Llamar a uploadFile
+		uploadFile(c, server, taskID, tempFileName, token)
+	})
+
+	router.POST("/process", func(c *gin.Context) {
+		server := c.PostForm("server")
+		taskID := c.PostForm("taskID")
+		serverFilename := c.PostForm("server_filename")
+		filename := c.PostForm("filename")
+		password := c.PostForm("password")
+		token := postAuth()
+		processFile(c, server, taskID, serverFilename, filename, password, token)
+	})
+
+	router.Run("localhost:8080")
+}
