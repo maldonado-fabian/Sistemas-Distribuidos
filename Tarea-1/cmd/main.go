@@ -19,7 +19,7 @@ var userCollection *mongo.Collection
 var opcion int
 var id, nombre, apellido, rut, correo, contraseña string
 
-// funcion para los que los inputs sean de la forma "Ingrese su nombre: "nombre"
+// funcion para los que los inputs sean de la forma "Ingrese su nombre: "nombre" por alguna razon no acepta la primera vez que se llama
 func getInput(prompt string) string {
 	fmt.Print(prompt)
 	reader := bufio.NewReader(os.Stdin)
@@ -76,7 +76,6 @@ func main() {
 		fmt.Println("3) Salir")
 
 		fmt.Scan(&opcion)
-
 		switch opcion {
 		case 1:
 			correo = getInput("Ingrese su correo: ")
@@ -89,6 +88,8 @@ func main() {
 				fmt.Println("3) Salir")
 
 				fmt.Scan(&opcion)
+				nombre = getInput("Ingrese su nombre: ")
+
 				switch opcion {
 				case 1:
 					for opcion != 7 {
@@ -122,7 +123,7 @@ func main() {
 						case 5:
 							nombre = getInput("Ingrese el nuevo nombre: ")
 							apellido = getInput("Ingrese el nuevo apellido: ")
-							rut = getInput("Ingrese el nuevo RUT: ")
+							rut = getInput("Ingrese el nuev	o RUT: ")
 							correo = getInput("Ingrese el nuevo correo: ")
 							//routes.UpdateUserByID
 						case 6:
