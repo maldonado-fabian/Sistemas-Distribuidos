@@ -3,12 +3,12 @@ package routes
 import (
 	"context"
 	"net/http"
-	"strconv"
 
 	"apidis/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -60,14 +60,17 @@ func PostUser(c *gin.Context) {
 // Función para obtener un usuario por su ID
 func GetUserByID(c *gin.Context) {
 	id := c.Param("id")
-	userID, err := strconv.Atoi(id)
+
+	// Convertir el parámetro ID en un tipo ObjectID
+	userID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
 	}
 
 	var user models.User
-	err = userCollection.FindOne(context.Background(), bson.D{{"id", userID}}).Decode(&user)
+	// Buscar el usuario por su _id en la base de datos
+	err = userCollection.FindOne(context.Background(), bson.D{{"_id", userID}}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
 		return
@@ -82,52 +85,63 @@ func GetUserByID(c *gin.Context) {
 // Función para eliminar un usuario por su ID
 func DeleteUserByID(c *gin.Context) {
 	id := c.Param("id")
-	userID, err := strconv.Atoi(id)
+
+	// Convertir el parámetro ID en un tipo ObjectID
+	userID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
 	}
 
-	result, err := userCollection.DeleteOne(context.Background(), bson.D{{"id", userID}})
+	// Eliminar el usuario por su _id en la base de datos
+	result, err := userCollection.DeleteOne(context.Background(), bson.D{{"_id", userID}})
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar usuario"})
 		return
 	}
 
+	// Verificar si el usuario fue encontrado y eliminado
 	if result.DeletedCount == 0 {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
 		return
 	}
 
+	// Usuario eliminado exitosamente
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Usuario eliminado exitosamente"})
 }
 
 // Función para actualizar un usuario por su ID
 func UpdateUserByID(c *gin.Context) {
 	id := c.Param("id")
-	userID, err := strconv.Atoi(id)
+
+	// Convertir el parámetro ID en un tipo ObjectID
+	userID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
 	}
 
+	// Decodificar el usuario actualizado del cuerpo de la solicitud
 	var updatedUser models.User
 	if err := c.BindJSON(&updatedUser); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Datos de usuario inválidos"})
 		return
 	}
 
-	result, err := userCollection.ReplaceOne(context.Background(), bson.D{{"id", userID}}, updatedUser)
+	// Actualizar el usuario por su _id en la base de datos
+	result, err := userCollection.ReplaceOne(context.Background(), bson.D{{"_id", userID}}, updatedUser)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar usuario"})
 		return
 	}
 
+	// Verificar si el usuario fue encontrado y actualizado
 	if result.MatchedCount == 0 {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
 		return
 	}
 
+	// Devolver el usuario actualizado como respuesta
 	c.IndentedJSON(http.StatusOK, updatedUser)
 }
 
