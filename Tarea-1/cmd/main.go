@@ -2,13 +2,10 @@ package main
 
 import (
 	"apidis/routes"
-	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,17 +18,12 @@ var id, nombre, apellido, rut, correo, contraseña string
 
 // funcion para los que los inputs sean de la forma "Ingrese su nombre: "nombre" por alguna razon no acepta la primera vez que se llama
 func getInput(prompt string) string {
+	var input string
 	fmt.Print(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-
-	// Remover el salto de línea al final de la entrada
-	input = strings.Replace(input, "\n", "", -1)
-
+	fmt.Scan(&input)
 	return input
 }
 func main() {
-
 	// Establecer la conexión a la base de datos MongoDB
 	clientOptions := options.Client().ApplyURI("mongodb+srv://fabu:izipizi123@distribuidos.wdrdmez.mongodb.net/?retryWrites=true&w=majority&appName=Distribuidos")
 	client, err := mongo.Connect(context.Background(), clientOptions)
@@ -67,15 +59,15 @@ func main() {
 
 	// Manejar la entrada del usuario
 	for opcion != 3 {
-
 		fmt.Print("Bienvenido al sistema de protección de archivos de DiSis.\n" +
 			"Para utilizar la aplicación seleccione los números\n" +
 			"correspondientes al menú.\n")
 		fmt.Println("1) Ingreso")
 		fmt.Println("2) Registro")
 		fmt.Println("3) Salir")
-
+		fmt.Print((""))
 		fmt.Scan(&opcion)
+		fmt.Println("")
 		switch opcion {
 		case 1:
 			correo = getInput("Ingrese su correo: ")
