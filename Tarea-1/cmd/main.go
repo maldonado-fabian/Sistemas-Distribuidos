@@ -62,26 +62,32 @@ func main() {
 		fmt.Print("Bienvenido al sistema de protección de archivos de DiSis.\n" +
 			"Para utilizar la aplicación seleccione los números\n" +
 			"correspondientes al menú.\n")
+		fmt.Println(" ")
+		fmt.Println("Ingrese o registrese")
+		fmt.Println(" ")
 		fmt.Println("1) Ingreso")
 		fmt.Println("2) Registro")
 		fmt.Println("3) Salir")
-		fmt.Print((""))
+		fmt.Println(" ")
 		fmt.Scan(&opcion)
-		fmt.Println("")
+		fmt.Println(" ")
 		switch opcion {
 		case 1:
 			correo = getInput("Ingrese su correo: ")
 			contraseña = getInput("Ingrese su contraseña: ")
+			fmt.Println(" ")
 			// caso de login exitoso
+			fmt.Println("ingreso exitoso!")
+			fmt.Println(" ")
 			for opcion != 3 {
 				fmt.Print("menu principal\n")
+				fmt.Println(" ")
 				fmt.Println("1) clientes")
 				fmt.Println("2) proteccion")
 				fmt.Println("3) Salir")
-
+				fmt.Println(" ")
 				fmt.Scan(&opcion)
-				nombre = getInput("Ingrese su nombre: ")
-
+				fmt.Println(" ")
 				switch opcion {
 				case 1:
 					for opcion != 7 {
@@ -92,43 +98,49 @@ func main() {
 						fmt.Println("5) Actualizar datos de un cliente")
 						fmt.Println("6) Borrar un cliente por ID")
 						fmt.Println("7) Volver")
-
+						fmt.Println(" ")
 						fmt.Scan(&opcion)
-
+						fmt.Println(" ")
 						switch opcion {
 						case 1:
 							//routes.GetUsers
 						case 2:
 							//nose si esta bien
 							id = getInput("Ingrese el ID del cliente: ")
+							fmt.Println(" ")
 							//routes.GetUserByID
 						case 3:
 							rut = getInput("Ingrese el RUT a buscar: ")
+							fmt.Println(" ")
 							//routes.GetUserByRUT
 						case 4:
 							nombre = getInput("Ingrese su nombre: ")
 							apellido = getInput("Ingrese su apellido: ")
 							rut = getInput("Ingrese su RUT: ")
 							correo = getInput("Ingrese su correo: ")
+							fmt.Println(" ")
 							//routes.Register
-							fmt.Println("¡Cliente “Nombre” creado con éxito!")
+							fmt.Println("¡Cliente", nombre, "creado con éxito!")
+							fmt.Println(" ")
 						case 5:
 							nombre = getInput("Ingrese el nuevo nombre: ")
 							apellido = getInput("Ingrese el nuevo apellido: ")
 							rut = getInput("Ingrese el nuev	o RUT: ")
 							correo = getInput("Ingrese el nuevo correo: ")
+							fmt.Println(" ")
 							//routes.UpdateUserByID
 						case 6:
 							id = getInput("Ingrese el ID del cliente a borrar: ")
+							fmt.Println(" ")
 							//routes.DeleteUserByID
 						case 7:
-							// No se realiza ninguna acción
+							// vuelve a menu principal
 						}
 					}
 				case 2:
 					//wosh proteccion
 				case 3:
-					//no hace nada
+					fmt.Println("¡vuelve pronto!")
 				}
 			}
 
@@ -138,11 +150,11 @@ func main() {
 			rut = getInput("Ingrese su RUT: ")
 			correo = getInput("Ingrese su correo: ")
 			contraseña = getInput("Ingrese su contraseña: ")
-
+			fmt.Println(" ")
 			// crear un nuevo usuario
 
 			fmt.Println("¡registro exitoso!")
-
+			fmt.Println(" ")
 		case 3:
 			fmt.Print("¡vuelve pronto!")
 		default:
