@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	"apidis/pdfapi"
+	"apidis/routes"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -56,6 +59,8 @@ func main() {
 	router.POST("/login", routes.Login)
 	router.POST("/register", routes.Register)
 	router.POST("/logout", routes.Logout)
+
+	router.POST("/api/protect", pdfapi.ProtectPDF)
 
 	// Manejar la entrada del usuario
 	for opcion != 3 {
@@ -161,6 +166,7 @@ func main() {
 			fmt.Println("Opción no válida. Por favor, seleccione una opción válida.")
 		}
 	}
+
 	// Iniciar el servidor HTTP
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatal(err)
