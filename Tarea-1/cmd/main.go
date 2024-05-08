@@ -302,8 +302,46 @@ func menuCliente() {
 	}
 }
 func menuPDF() {
+	var id_protec, filePath, password string
+	fmt.Println("Escriba el ID del cliente objetivo: ")
+	fmt.Scan(&id_protec)
+	fmt.Println("Escriba la ruta donde se encuentra el archivo (incluya el nombre): ")
+	fmt.Scan(&filePath)
 
+	response, err := http.Get("http://localhost:8080/users/" + id_protec)
+	if err != nil {
+		fmt.Println("Error al realizar la solicitud HTTP:", err)
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		fmt.Println("Error: El usuario no fue encontrado")
+		return
+	}
+
+	var user User
+	if err := json.NewDecoder(response.Body).Decode(&user); err != nil {
+		fmt.Println("Error al decodificar la respuesta:", err)
+		return
+	}
+	password = user.Rut
+
+	jsonData, _ := json.Marshal(map[string]string{"filePath": filePath, "password": password})
+	response2, err2 := http.Post("http://localhost:8080/api/protect", "application/json", bytes.NewBuffer(jsonData))
+	if err2 != nil {
+		fmt.Println("Error al realizar la solicitud HTTP:", err2)
+		return
+	}
+	defer response2.Body.Close()
+
+	if response2.StatusCode == http.StatusOK {
+		fmt.Println("¡Protección exitosa! Su archivo se encuentra en:", filePath)
+	} else {
+		fmt.Println("No se pudo proteger.")
+	}
 }
+
 func menuPrincipal() {
 	var opcion int
 	fmt.Println("Menú Principal")

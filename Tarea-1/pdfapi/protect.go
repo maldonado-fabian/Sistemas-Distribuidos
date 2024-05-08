@@ -1,25 +1,29 @@
 package pdfapi
 
 import (
-	"fmt"
+	"net/http"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
 
 func ProtectPDF(c *gin.Context) {
-	fmt.Print("Ingrese la ruta del archivo PDF a proteger: ")
-	var filePath string
-	fmt.Scanln(&filePath)
+	var input struct {
+		FilePath string `json:"filePath"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
 
 	token := postAuth()
 	server, taskID := getStartProtect()
 
-	serverFilename := uploadFile(c, server, taskID, filePath, token)
+	serverFilename := uploadFile(c, server, taskID, input.FilePath, token)
 
 	// Datos adicionales necesarios para processFile
-	filename := filepath.Base(filePath) // o algún otro nombre lógico
-	password := "userPassword"          // Debería venir de alguna parte segura
+	filename := filepath.Base(input.FilePath) // o algún otro nombre lógico
 
-	processFile(c, server, taskID, serverFilename, filename, password, token)
+	processFile(c, server, taskID, serverFilename, filename, input.Password, token)
 }
