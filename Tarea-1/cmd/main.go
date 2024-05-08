@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"apidis/pdfapi"
 	"apidis/routes"
 
 	"github.com/gin-gonic/gin"
@@ -47,6 +48,8 @@ func main() {
 	router.POST("/login", routes.Login)
 	router.POST("/register", routes.Register)
 	router.POST("/logout", routes.Logout)
+
+	router.POST("/api/protect", pdfapi.ProtectPDF)
 
 	// Iniciar el servidor HTTP
 	if err := http.ListenAndServe(":8080", router); err != nil {
