@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"apidis/pdfapi"
-	"apidis/routes"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
