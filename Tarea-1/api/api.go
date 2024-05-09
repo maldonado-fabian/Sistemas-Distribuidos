@@ -1,14 +1,16 @@
 package main
 
 import (
+	"apidis/pdfapi"
 	"apidis/routes"
 	"context"
 	"log"
 	"net/http"
-
-	"apidis/pdfapi"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -17,7 +19,17 @@ var userCollection *mongo.Collection
 
 func main() {
 	// Establecer la conexión a la base de datos MongoDB
-	clientOptions := options.Client().ApplyURI("mongodb+srv://fabu:izipizi123@distribuidos.wdrdmez.mongodb.net/?retryWrites=true&w=majority&appName=Distribuidos")
+	envFile := filepath.Join("..", ".env")
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatal("Error cargando el archivo .env")
+	}
+
+	// Obtiene la URL de conexión a la base de datos desde las variables de entorno
+	dbURL := os.Getenv("MONGO_URI")
+	port := os.Getenv("PORT")
+
+	clientOptions := options.Client().ApplyURI(dbURL)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +63,7 @@ func main() {
 	router.POST("/api/protect", pdfapi.ProtectPDF)
 
 	// Iniciar el servidor HTTP
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatal(err)
 	}
 }
