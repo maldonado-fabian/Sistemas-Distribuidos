@@ -4,12 +4,29 @@ import (
 	"apidis/models"
 	. "apidis/models"
 	"bytes"
+
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Establecer la conexión a la base de datos MongoDB
+	envFile := filepath.Join("..", ".env")
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatal("Error cargando el archivo .env")
+	}
+
+	// Obtiene la URL de conexión a la base de datos desde las variables de entorno
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+
 	var opcion int
 	var correo, contraseña string
 	fmt.Println("Bienvenido al sistema de protección de archivos de DiSis.")
@@ -30,7 +47,7 @@ func main() {
 			fmt.Println("Ingrese su contraseña:")
 			fmt.Scan(&contraseña)
 			// Llamar a la función de inicio de sesión de la API
-			response, err := http.Post("http://localhost:8080/login", "application/json", bytes.NewBuffer([]byte(`{"email":"`+correo+`","password":"`+contraseña+`"}`)))
+			response, err := http.Post("http://"+host+":"+port+"/login", "application/json", bytes.NewBuffer([]byte(`{"email":"`+correo+`","password":"`+contraseña+`"}`)))
 			if err != nil {
 				fmt.Println("Error al realizar la solicitud HTTP:", err)
 				continue
@@ -73,7 +90,7 @@ func main() {
 			}
 
 			// Realizar la solicitud HTTP POST para crear el nuevo usuario
-			response, err := http.Post("http://localhost:8080/users", "application/json", bytes.NewBuffer(newUserJSON))
+			response, err := http.Post("http://"+host+":"+port+"/users", "application/json", bytes.NewBuffer(newUserJSON))
 			if err != nil {
 				fmt.Println("Error al realizar la solicitud HTTP:", err)
 				return
@@ -98,6 +115,15 @@ func main() {
 }
 
 func menuCliente() {
+	envFile := filepath.Join("..", ".env")
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatal("Error cargando el archivo .env")
+	}
+
+	// Obtiene la URL de conexión a la base de datos desde las variables de entorno
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
 	var opcionCliente int
 
 	for opcionCliente != 6 {
@@ -115,7 +141,7 @@ func menuCliente() {
 		switch opcionCliente {
 		case 1:
 			// Obtener todos los usuarios
-			response, err := http.Get("http://localhost:8080/users")
+			response, err := http.Get("http://" + host + ":" + port + "/users")
 			if err != nil {
 				fmt.Println("Error al realizar la solicitud HTTP:", err)
 				continue
@@ -139,7 +165,7 @@ func menuCliente() {
 			var idUsuario string
 			fmt.Println("Ingresa el id del usuario que quieres econtrar")
 			fmt.Scan(&idUsuario)
-			response, err := http.Get("http://localhost:8080/users/" + idUsuario)
+			response, err := http.Get("http://" + host + ":" + port + "/users/" + idUsuario)
 			if err != nil {
 				fmt.Println("Error al realizar la solicitud HTTP:", err)
 				continue
@@ -171,7 +197,7 @@ func menuCliente() {
 			var idUsuario string
 			fmt.Println("Ingresa el id del usuario que quieres borrar")
 			fmt.Scan(&idUsuario)
-			req, err := http.NewRequest("DELETE", fmt.Sprintf("http://localhost:8080/users/%s", idUsuario), nil)
+			req, err := http.NewRequest("DELETE", fmt.Sprintf("http://"+host+":"+port+"/users/%s", idUsuario), nil)
 			if err != nil {
 				fmt.Println("Error al crear la solicitud HTTP:", err)
 				return
@@ -222,7 +248,7 @@ func menuCliente() {
 			}
 
 			// Realizar la solicitud HTTP POST para crear el nuevo usuario
-			response, err := http.Post("http://localhost:8080/users", "application/json", bytes.NewBuffer(newUserJSON))
+			response, err := http.Post("http://"+host+":"+port+"/users", "application/json", bytes.NewBuffer(newUserJSON))
 			if err != nil {
 				fmt.Println("Error al realizar la solicitud HTTP:", err)
 				return
@@ -270,7 +296,7 @@ func menuCliente() {
 			}
 
 			// Crear una nueva solicitud HTTP PUT para actualizar el usuario
-			req, err := http.NewRequest("PUT", fmt.Sprintf("http://localhost:8080/users/%s", id), bytes.NewBuffer(updateDataJSON))
+			req, err := http.NewRequest("PUT", fmt.Sprintf("http://"+host+":"+port+"/users/%s", id), bytes.NewBuffer(updateDataJSON))
 			if err != nil {
 				fmt.Println("Error al crear la solicitud HTTP:", err)
 				return
@@ -302,13 +328,22 @@ func menuCliente() {
 	}
 }
 func menuPDF() {
+	envFile := filepath.Join("..", ".env")
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatal("Error cargando el archivo .env")
+	}
+
+	// Obtiene la URL de conexión a la base de datos desde las variables de entorno
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
 	var id_protec, filePath, password string
 	fmt.Println("Escriba el ID del cliente objetivo: ")
 	fmt.Scan(&id_protec)
 	fmt.Println("Escriba la ruta donde se encuentra el archivo (incluya el nombre): ")
 	fmt.Scan(&filePath)
 
-	response, err := http.Get("http://localhost:8080/users/" + id_protec)
+	response, err := http.Get("http://" + host + ":" + port + "/users/" + id_protec)
 	if err != nil {
 		fmt.Println("Error al realizar la solicitud HTTP:", err)
 		return
@@ -328,7 +363,7 @@ func menuPDF() {
 	password = user.Rut
 
 	jsonData, _ := json.Marshal(map[string]string{"filePath": filePath, "password": password})
-	response2, err2 := http.Post("http://localhost:8080/api/protect", "application/json", bytes.NewBuffer(jsonData))
+	response2, err2 := http.Post("http://"+host+":"+port+"/api/protect", "application/json", bytes.NewBuffer(jsonData))
 	if err2 != nil {
 		fmt.Println("Error al realizar la solicitud HTTP:", err2)
 		return

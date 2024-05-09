@@ -5,15 +5,26 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-)
+	"os"
+	"path/filepath"
 
-const public_key string = "project_public_c14b91af1ac4799b1f229e682d664154_x5xfs2fff307d4bde7d8b8b6bef3a0f2a9391"
+	"github.com/joho/godotenv"
+)
 
 type authResponse struct {
 	Token string `json:"token"`
 }
 
 func postAuth() string {
+	envFile := filepath.Join("..", ".env")
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatal("Error cargando el archivo .env")
+	}
+
+	// Obtiene la URL de conexión a la base de datos desde las variables de entorno
+	public_key := os.Getenv("PUBLIC_KEY")
+
 	body, _ := json.Marshal(map[string]string{
 		"public_key": public_key,
 	})

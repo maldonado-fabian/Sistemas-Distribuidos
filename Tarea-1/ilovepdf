@@ -264,5 +264,5 @@ func main() {
 		processFile(c, server, taskID, serverFilename, filename, password, token)
 	})
 
-	router.Run("localhost:8080")
+	router.Run(""+host+":"+port+"")
 }
