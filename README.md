@@ -17,4 +17,4 @@ en la segunda terminar se debera ir a la carpeta main y ejecutar el archivo main
 
 > go run main.go
 
-se asume que todos los datos seran ingresadps correctamente
+se asume que todos los datos seran ingresados correctamente
